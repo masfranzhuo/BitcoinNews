@@ -1,6 +1,8 @@
 package com.hodiau.bitcoinnews
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
@@ -11,7 +13,6 @@ import com.hodiau.startup.BuildConfig
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.news_ticket.view.*
 import android.os.AsyncTask
-import android.widget.Toast
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.message_ticket.view.*
 import org.json.JSONObject
@@ -75,7 +76,10 @@ class MainActivity : AppCompatActivity() {
                 myView.tvSource.text = news.source
                 Picasso.with(context).load(news.imageURL).into(myView.ivImage)
                 myView.llURL.setOnClickListener({
-                    Toast.makeText(applicationContext, "Clicked", Toast.LENGTH_SHORT).show()
+                    val url = news.URL
+                    val intent = Intent(Intent.ACTION_VIEW)
+                    intent.data = Uri.parse(url)
+                    startActivity(intent)
                 })
                 return myView
             }
@@ -216,7 +220,7 @@ class MainActivity : AppCompatActivity() {
 
     fun ConvertUTCToLocale(date:String):Date {
         val simpleDateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-        simpleDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"))
+        //simpleDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"))
         val myDate = simpleDateFormat.parse(date)
         return myDate
     }
