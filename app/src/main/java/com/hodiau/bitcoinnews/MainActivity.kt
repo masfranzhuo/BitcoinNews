@@ -23,6 +23,10 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
+import android.net.ConnectivityManager
+import android.widget.Toast
+import kotlinx.android.synthetic.main.load_ticket.view.*
+
 
 class MainActivity : AppCompatActivity() {
     var apiKey:String = BuildConfig.NEWSAPI_API_KEY
@@ -39,11 +43,33 @@ class MainActivity : AppCompatActivity() {
         adapter = myNewsAdapter(this, listNews)
         lvNews.adapter = adapter
         */
-        listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", "Published At", "loading"))
-        adapter = myNewsAdapter(this, listNews)
-        lvNews.adapter = adapter
 
-        GetNews(this)
+        LoadData()
+    }
+
+    fun isNetworkConnected(): Boolean {
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        return cm.activeNetworkInfo != null
+    }
+
+    fun LoadData() {
+        listNews.clear()
+        if(isNetworkConnected()) {
+            // add loading progress bar before load data
+            listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", "Published At", "loading"))
+            adapter = myNewsAdapter(this, listNews)
+            lvNews.adapter = adapter
+
+            // get data
+            GetNews(this)
+        } else {
+            // show button ui to load data
+            listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", "Published At", "loaddata"))
+            adapter = myNewsAdapter(this, listNews)
+            lvNews.adapter = adapter
+
+            Toast.makeText(this, "No internet connection", Toast.LENGTH_SHORT).show()
+        }
     }
 
     inner class myNewsAdapter:BaseAdapter {
@@ -66,10 +92,16 @@ class MainActivity : AppCompatActivity() {
                 var myView = layoutInflater.inflate(R.layout.message_ticket,null)
                 myView.tvMessage.text = "No data found"
                 return myView
+            } else if (news.viewType.equals("loaddata")) {
+                var myView = layoutInflater.inflate(R.layout.load_ticket,null)
+                myView.buGetData.setOnClickListener({
+                    LoadData()
+                })
+                return myView
             } else {
                 val myView = layoutInflater.inflate(R.layout.news_ticket, null)
-                myView.tvPublishedAt.text = news.publishedAt
-                //myView.tvPublishedAt.text = ConvertUTCToLocale(news.publishedAt!!).toString()
+                //myView.tvPublishedAt.text = news.publishedAt
+                myView.tvPublishedAt.text = convertDateFormat(news.publishedAt!!)
                 myView.tvTitle.text = news.title
                 myView.tvDescription.text = news.description
                 myView.tvAuthor.text = news.author
@@ -96,7 +128,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun GetNews(context:Context){
-        val url = "https://newsapi.org/v2/top-headlines?q=bitcoin&apiKey="+apiKey
+        //val url = "https://newsapi.org/v2/top-headlines?q=bitcoin&apiKey="+apiKey
+		val url = "https://newsapi.org/v2/everything?q=bitcoin&sortBy=publishedAt&language=en&page=1&&apiKey="+apiKey
         MyAsyncTask(context).execute(url)
     }
 
@@ -218,10 +251,18 @@ class MainActivity : AppCompatActivity() {
         return AllString
     }
 
-    fun ConvertUTCToLocale(date:String):Date {
-        val simpleDateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-        //simpleDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"))
-        val myDate = simpleDateFormat.parse(date)
-        return myDate
+    fun convertDateFormat(dateStr:String):String? {
+        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+        if (dateStr.contains("Z")) {
+            val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
+            val date = formatter.parse(dateStr) as Date
+            return sdf.format(date)
+        } else if (dateStr.contains("+00:00")) {
+            val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.getDefault())
+            val date = formatter.parse(dateStr) as Date
+            return sdf.format(date)
+        } else {
+            return dateStr
+        }
     }
 }
