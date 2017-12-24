@@ -15,7 +15,6 @@ import kotlinx.android.synthetic.main.news_ticket.view.*
 import android.os.AsyncTask
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.message_ticket.view.*
-import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
@@ -25,6 +24,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import android.net.ConnectivityManager
 import android.widget.Toast
+import com.google.gson.GsonBuilder
 import kotlinx.android.synthetic.main.load_ticket.view.*
 
 
@@ -36,14 +36,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        /*
-        // dummy data
-        listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", "Published At", "dummy"))
-        listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", "Published At", "dummy"))
-        adapter = myNewsAdapter(this, listNews)
-        lvNews.adapter = adapter
-        */
-
         LoadData()
     }
 
@@ -53,18 +45,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun LoadData() {
-        listNews.clear()
         if(isNetworkConnected()) {
             // add loading progress bar before load data
-            listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", "Published At", "loading"))
+            listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", Date(), "loading"))
             adapter = myNewsAdapter(this, listNews)
             lvNews.adapter = adapter
 
             // get data
             GetNews(this)
         } else {
+            listNews.clear()
             // show button ui to load data
-            listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", "Published At", "loaddata"))
+            listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", Date(), "loaddata"))
             adapter = myNewsAdapter(this, listNews)
             lvNews.adapter = adapter
 
@@ -100,8 +92,8 @@ class MainActivity : AppCompatActivity() {
                 return myView
             } else {
                 val myView = layoutInflater.inflate(R.layout.news_ticket, null)
-                //myView.tvPublishedAt.text = news.publishedAt
-                myView.tvPublishedAt.text = convertDateFormat(news.publishedAt!!)
+                val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+                myView.tvPublishedAt.text = sdf.format(news.publishedAt).toString()
                 myView.tvTitle.text = news.title
                 myView.tvDescription.text = news.description
                 myView.tvAuthor.text = news.author
@@ -128,7 +120,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun GetNews(context:Context){
-        //val url = "https://newsapi.org/v2/top-headlines?q=bitcoin&apiKey="+apiKey
 		val url = "https://newsapi.org/v2/everything?q=bitcoin&sortBy=publishedAt&language=en&page=1&&apiKey="+apiKey
         MyAsyncTask(context).execute(url)
     }
@@ -155,78 +146,45 @@ class MainActivity : AppCompatActivity() {
             return " "
         }
         override fun onProgressUpdate(vararg values: String?) {
+            listNews.clear()
             try{
-                listNews.clear()
-                var json = JSONObject(values[0])
-                val status = json.getString("status") // use for check condition
-                if(status.equals("ok")) {
-                    val totalResults = json.getInt("totalResults") // use for check condition
-                    if(totalResults > 0) {
-                        val articles = json.getJSONArray("articles")
-                        for (i in 0..(articles.length() - 1)) {
-                            var checkNull = false;
-                            val article = articles.getJSONObject(i)
-                            val source = article.getJSONObject("source")
-                            var sourceName:String? = null
-                            if (source.has("name") && !source.isNull("name")) {
-                                sourceName = source.getString("name")
-                            } else {
+                var gsonBuilder = GsonBuilder()
+                var gson = gsonBuilder.create()
+                var news:News = gson.fromJson(values[0], News::class.java)
+
+                if(news.status.equals("ok")) {
+                    if(news.totalResults!! > 0) {
+                        val articles = news.articles
+                        for(article:Article in articles!!) {
+                            var sourceName:String? = article.source!!.name
+                            var author:String? = article.author
+                            var title:String? = article.title
+                            var description:String? = article.description
+                            var url:String? = article.url
+                            var urlToImage:String? = article.urlToImage
+                            var publishedAt:Date? = article.publishedAt
+                            var checkNull = false
+                            if(sourceName == null || author == null || title == null || description == null || url == null
+                                    || urlToImage == null || publishedAt == null) {
                                 checkNull = true
                             }
-                            var author:String? = null
-                            if (article.has("author") && !article.isNull("author")) {
-                                author = article.getString("author")
-                            } else {
-                                checkNull = true
-                            }
-                            var title:String? = null
-                            if (article.has("title") && !article.isNull("title")) {
-                                title = article.getString("title")
-                            } else {
-                                checkNull = true
-                            }
-                            var description:String? = null
-                            if (article.has("description") && !article.isNull("description")) {
-                                description = article.getString("description")
-                            } else {
-                                checkNull = true
-                            }
-                            var url:String? = null
-                            if (article.has("url") && !article.isNull("url")) {
-                                url = article.getString("url")
-                            } else {
-                                checkNull = true
-                            }
-                            var urlToImage:String? = null
-                            if (article.has("urlToImage") && !article.isNull("urlToImage")) {
-                                urlToImage = article.getString("urlToImage")
-                            } else {
-                                checkNull = true
-                            }
-                            var publishedAt:String? = null
-                            if (article.has("publishedAt") && !article.isNull("publishedAt")) {
-                                publishedAt = article.getString("publishedAt")
-                            } else {
-                                checkNull = true
-                            }
-                            // add to list if no param has null value
                             if (!checkNull) listNews.add(News(sourceName!!, author!!, title!!, description!!, url!!, urlToImage!!, publishedAt!!, "data"))
-                            //else listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", "Published At", "data"))
+                            //else listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", Date(), "data"))
                         }
                         adapter = myNewsAdapter(this.context!!, listNews)
                         lvNews.adapter = adapter
                     } else {
-                        listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", "Published At", "nodata"))
+                        listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", Date(), "nodata"))
                         adapter = myNewsAdapter(this.context!!, listNews)
                         lvNews.adapter = adapter
                     }
                 } else if(status.equals("error")) {
-                    listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", "Published At", "error"))
+                    listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", Date(), "error"))
                     adapter = myNewsAdapter(this.context!!, listNews)
                     lvNews.adapter = adapter
                 } else {
                     // TO DO: make ui say it error
-                    listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", "Published At", "error"))
+                    listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", Date(), "error"))
                     adapter = myNewsAdapter(this.context!!, listNews)
                     lvNews.adapter = adapter
                 }
@@ -249,20 +207,5 @@ class MainActivity : AppCompatActivity() {
             inputStream.close()
         } catch(ex:Exception){}
         return AllString
-    }
-
-    fun convertDateFormat(dateStr:String):String? {
-        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-        if (dateStr.contains("Z")) {
-            val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
-            val date = formatter.parse(dateStr) as Date
-            return sdf.format(date)
-        } else if (dateStr.contains("+00:00")) {
-            val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.getDefault())
-            val date = formatter.parse(dateStr) as Date
-            return sdf.format(date)
-        } else {
-            return dateStr
-        }
     }
 }
