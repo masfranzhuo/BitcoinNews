@@ -10,6 +10,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.*
 import android.app.Activity
+import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
 import java.lang.ref.WeakReference
 
@@ -22,10 +23,14 @@ class NewsAsyncTask: AsyncTask<String, String, String> {
     var adapter:NewsAdapter? = null
     var mWeakActivity: WeakReference<Activity>? = null
     var activity:Activity? = null
-    constructor(context: Context, activity: Activity) {
+    var page:Int? = 1
+    constructor(context: Context, listNews: ArrayList<News>, adapter: NewsAdapter, activity: Activity, page: Int) {
         this.context = context
+        this.listNews = listNews
+        this.adapter = adapter
         mWeakActivity = WeakReference(activity)
         this.activity = mWeakActivity!!.get()!!
+        this.page = page
     }
     override fun onPreExecute() {
         //before task started
@@ -45,7 +50,6 @@ class NewsAsyncTask: AsyncTask<String, String, String> {
         return " "
     }
     override fun onProgressUpdate(vararg values: String?) {
-        listNews.clear()
         try{
             var gsonBuilder = GsonBuilder()
             var gson = gsonBuilder.create()
@@ -70,27 +74,20 @@ class NewsAsyncTask: AsyncTask<String, String, String> {
                         if (!checkNull) listNews.add(News(sourceName!!, author!!, title!!, description!!, url!!, urlToImage!!, publishedAt!!, "data"))
                         //else listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", Date(), "data"))
                     }
-                    adapter = NewsAdapter(context!!, listNews)
-                    activity!!.lvNews.adapter = adapter
                 } else {
-                    listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", Date(), "nodata"))
-                    adapter = NewsAdapter(context!!, listNews)
-                    activity!!.lvNews.adapter = adapter
+                    Toast.makeText(context!!, "No data to retrieve", Toast.LENGTH_SHORT).show()
                 }
             } else if(status.equals("error")) {
-                listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", Date(), "error"))
-                adapter = NewsAdapter(context!!, listNews)
-                activity!!.lvNews.adapter = adapter
+                Toast.makeText(context!!, "Retrieve data error", Toast.LENGTH_SHORT).show()
             } else {
                 // TO DO: make ui say it error
-                listNews.add(News("Source", "Author", "Title", "Description", "URL", "imageURL", Date(), "error"))
-                adapter = NewsAdapter(context!!, listNews)
-                activity!!.lvNews.adapter = adapter
+                Toast.makeText(context!!, "Retrieve data error", Toast.LENGTH_SHORT).show()
             }
         } catch(ex:Exception){}
     }
     override fun onPostExecute(result: String?) {
         //after task done
+        adapter!!.notifyDataSetChanged()
         activity!!.swiperefresh.setRefreshing(false)
     }
 

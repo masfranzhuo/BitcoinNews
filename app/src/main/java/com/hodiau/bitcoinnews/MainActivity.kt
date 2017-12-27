@@ -13,21 +13,39 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.SearchView
 import android.widget.Toast
+import java.util.ArrayList
 
 class MainActivity : AppCompatActivity() {
     val apiKey:String = BuildConfig.NEWSAPI_API_KEY
-    val url = "https://newsapi.org/v2/everything?q=bitcoin&sortBy=publishedAt&language=en&page=1&apiKey="+apiKey
+    var listNews = ArrayList<News>()
+    var adapter:NewsAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // swipe refresh feature on list view
         swiperefresh.setOnRefreshListener(object:SwipeRefreshLayout.OnRefreshListener {
             override fun onRefresh() {
-                LoadData()
+                listNews.clear()
+                adapter = NewsAdapter(applicationContext, listNews)
+                lvNews.adapter = adapter
+                LoadData(1)
             }
         })
-        LoadData()
+
+        // load more on scrool at list view
+        lvNews.setOnScrollListener(object:EndlessScrollListener(2, 0) {
+            override fun onLoadMore(page: Int, totalItemsCount: Int): Boolean {
+                LoadData(page)
+                return true
+            }
+        })
+
+        //initialize adapter and set it to list view
+        adapter = NewsAdapter(this, listNews)
+        lvNews.adapter = adapter
+        LoadData(1)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -53,7 +71,10 @@ class MainActivity : AppCompatActivity() {
         if(item != null) {
             when(item.itemId) {
                 R.id.menu_refresh -> {
-                    LoadData()
+                    listNews.clear()
+                    adapter = NewsAdapter(this, listNews)
+                    lvNews.adapter = adapter
+                    LoadData(1)
                 }
             }
         }
@@ -65,9 +86,10 @@ class MainActivity : AppCompatActivity() {
         return cm.activeNetworkInfo != null
     }
 
-    fun LoadData() {
+    fun LoadData(startPage:Int) {
         if(isNetworkConnected()) {
-            NewsAsyncTask(this, this).execute(url)
+            var url = "https://newsapi.org/v2/everything?q=bitcoin&sortBy=publishedAt&language=en&page="+startPage+"&apiKey="+apiKey
+            NewsAsyncTask(this, listNews, adapter!!,this, startPage).execute(url)
         } else {
             swiperefresh.setRefreshing(false)
             Toast.makeText(this, "No internet connection", Toast.LENGTH_SHORT).show()
