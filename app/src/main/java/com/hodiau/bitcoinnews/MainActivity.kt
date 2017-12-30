@@ -19,6 +19,7 @@ class MainActivity : AppCompatActivity() {
     val apiKey:String = BuildConfig.NEWSAPI_API_KEY
     var listNews = ArrayList<News>()
     var adapter:NewsAdapter? = null
+    var strSearch:String? = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,14 +31,14 @@ class MainActivity : AppCompatActivity() {
                 listNews.clear()
                 adapter = NewsAdapter(applicationContext, listNews)
                 lvNews.adapter = adapter
-                LoadData(1)
+                LoadData(1, strSearch!!)
             }
         })
 
         // load more on scrool at list view
         lvNews.setOnScrollListener(object:EndlessScrollListener(2, 0) {
             override fun onLoadMore(page: Int, totalItemsCount: Int): Boolean {
-                LoadData(page)
+                LoadData(page, strSearch!!)
                 return true
             }
         })
@@ -45,7 +46,8 @@ class MainActivity : AppCompatActivity() {
         //initialize adapter and set it to list view
         adapter = NewsAdapter(this, listNews)
         lvNews.adapter = adapter
-        LoadData(1)
+        lvNews.isTextFilterEnabled = true
+        LoadData(1, strSearch!!)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -57,11 +59,16 @@ class MainActivity : AppCompatActivity() {
         searchView.setSearchableInfo(searchManager.getSearchableInfo(componentName))
         searchView.setOnQueryTextListener(object:SearchView.OnQueryTextListener{
             override fun onQueryTextSubmit(p0: String?): Boolean {
-                Toast.makeText(applicationContext, p0, Toast.LENGTH_SHORT).show()
-                return false
+                listNews.clear()
+                adapter = NewsAdapter(applicationContext, listNews)
+                lvNews.adapter = adapter
+                strSearch = p0
+                LoadData(1, strSearch!!)
+                return true
             }
             override fun onQueryTextChange(p0: String?): Boolean {
-                return false
+                strSearch = p0
+                return true
             }
         })
         return super.onCreateOptionsMenu(menu)
@@ -74,7 +81,7 @@ class MainActivity : AppCompatActivity() {
                     listNews.clear()
                     adapter = NewsAdapter(this, listNews)
                     lvNews.adapter = adapter
-                    LoadData(1)
+                    LoadData(1, strSearch!!)
                 }
             }
         }
@@ -86,9 +93,9 @@ class MainActivity : AppCompatActivity() {
         return cm.activeNetworkInfo != null
     }
 
-    fun LoadData(startPage:Int) {
+    fun LoadData(startPage:Int, strSearch:String) {
         if(isNetworkConnected()) {
-            var url = "https://newsapi.org/v2/everything?q=bitcoin&sortBy=publishedAt&language=en&page="+startPage+"&apiKey="+apiKey
+            var url = "https://newsapi.org/v2/everything?q=+bitcoin "+strSearch+"&sortBy=publishedAt&language=en&page="+startPage+"&apiKey="+apiKey
             NewsAsyncTask(this, listNews, adapter!!,this, startPage).execute(url)
         } else {
             swiperefresh.setRefreshing(false)
