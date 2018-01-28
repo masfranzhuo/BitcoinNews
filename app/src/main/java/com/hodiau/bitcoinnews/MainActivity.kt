@@ -14,16 +14,20 @@ import android.view.MenuItem
 import android.widget.SearchView
 import android.widget.Toast
 import java.util.ArrayList
+import com.google.firebase.analytics.FirebaseAnalytics
 
 class MainActivity : AppCompatActivity() {
     val apiKey:String = BuildConfig.NEWSAPI_API_KEY
     var listNews = ArrayList<News>()
     var adapter:NewsAdapter? = null
     var strSearch:String? = ""
-
+    var mFirebaseAnalytics: FirebaseAnalytics? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // initialize firebase instance
+        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this)
 
         // swipe refresh feature on list view
         swiperefresh.setOnRefreshListener(object:SwipeRefreshLayout.OnRefreshListener {
