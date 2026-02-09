@@ -1,27 +1,39 @@
-# Bitcoin  News
+# Bitcoin News (Flutter)
 
-This repository implement how to retrieve data from API and load the data to list view with Kotlin.
+This repository now contains a Flutter implementation of the Bitcoin News app using clean architecture (data, domain, and presentation layers). It fetches Bitcoin-related headlines from the News API and displays them in a paginated, refreshable list.
 
-Why bitcoin? because bitcoin(BTC) is one of the topic developer see as popular topics nowadays and this news will be useful for people who keep up with bitcoin prices, especially investor or trader.
+## Highlights
+- Clean architecture with `data`, `domain`, and `presentation` layers.
+- Bloc state management for pagination and refresh.
+- Cached network images for article thumbnails.
 
-## What code you will learn from this app?
+## Getting Started
 
-- Load JSON data from URL and parse with GSON
-- Swipe refresh
-- List view pagination with scrool listener
-- Load image URL with picasso
-- Firebase analytics
-
-### Application Screenshot
-![image](https://lh3.googleusercontent.com/Y7Rilpwga8VO_oykArVrXLSexNZTfcXiChUGuSppRSfM6VS1wADGAHIpzw94eGavG5g=h900)
-
-### Demo Link
-- [Google Play Store](https://play.google.com/store/apps/details?id=com.hodiau.bitcoinnews)
-
-### Note:
-
-Don't forget to create your own `keystore.properties` file on the root folder. This file contains only one line of code below.
+### 1) Install dependencies
+```sh
+flutter pub get
 ```
-NewsapiApiKey="YOUR_API_KEY"
+
+### 2) Provide your News API key
+The app expects a News API key via `--dart-define`:
+```sh
+flutter run --dart-define=NEWS_API_KEY=YOUR_API_KEY
 ```
-You can get your API key on [News API](https://newsapi.org/) site.
+
+You can get your API key from [News API](https://newsapi.org/).
+
+### 3) Run the app
+```sh
+flutter run --dart-define=NEWS_API_KEY=YOUR_API_KEY
+```
+
+## Project Structure
+```
+lib/
+  core/
+  features/
+    news/
+      data/
+      domain/
+      presentation/
+```
