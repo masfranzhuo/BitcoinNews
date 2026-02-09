@@ -29,6 +29,7 @@ class NewsBloc extends Bloc<NewsEvent, NewsState> {
     if (state.hasReachedMax || state.status == NewsStatus.loading) {
       return;
     }
+    emit(state.copyWith(status: NewsStatus.loading));
     await _fetchPage(emit, page: state.page + 1, reset: false);
   }
 
